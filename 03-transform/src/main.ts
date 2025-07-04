@@ -31,7 +31,7 @@ class App {
     const height = domApp.clientHeight;
 
     this.camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 100);
-    this.camera.position.z = 20;
+    this.camera.position.z = 10;
 
     new OrbitControls(this.camera, this.domApp as HTMLElement);
   }
@@ -45,29 +45,26 @@ class App {
   }
 
   private setupModels() {
-    const geomBox = new THREE.BoxGeometry(1);
     const material = new THREE.MeshStandardMaterial();
-    const box = new THREE.Mesh(geomBox, material);
 
-    const matrixS = new THREE.Matrix4().makeScale(0.5, 0.5, 0.5);
-    const matrixR = new THREE.Matrix4().makeRotationX(
-      THREE.MathUtils.degToRad(45)
-    );
-    const matrixT = new THREE.Matrix4().makeTranslation(0, 2, 0);
+    const geomParent = new THREE.BoxGeometry(2, 2, 2);
+    const parent = new THREE.Mesh(geomParent, material);
 
-    // 매트릭스 행렬을 만들어 적용하는 것은 코드 순서대로 실행돼서 예기치 못한 결과를 불러올 수 있다
-    // box.applyMatrix4(matrixS);
-    // box.applyMatrix4(matrixR);
-    // box.applyMatrix4(matrixT);
+    const geomChild = new THREE.BoxGeometry(1, 1, 1);
+    const child = new THREE.Mesh(geomChild, material);
 
-    // 아래 방식은 three.js 내부에서 scale > rotate > position 순으로 실행되게 하므로 순서에 영향을 받지 않음
-    box.rotation.x = THREE.MathUtils.degToRad(45);
-    box.position.set(0, 2, 0);
-    box.scale.set(0.5, 0.5, 0.5);
+    child.position.x = 3;
+    child.rotation.y = THREE.MathUtils.degToRad(45);
 
-    this.scene.add(box);
+    parent.position.y = 2;
+    parent.rotation.y = THREE.MathUtils.degToRad(45);
+    // parent.scale.set(2, 2, 2);
 
-    const axesOfScene = new THREE.AxesHelper(5);
+    parent.add(child);
+
+    this.scene.add(parent);
+
+    const axesOfScene = new THREE.AxesHelper(10);
     this.scene.add(axesOfScene);
   }
 
