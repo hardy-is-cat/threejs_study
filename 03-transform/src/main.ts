@@ -1,7 +1,6 @@
 import { OrbitControls } from "three/examples/jsm/Addons.js";
 import "./style.css";
 import * as THREE from "three";
-import { degToRad } from "three/src/math/MathUtils.js";
 
 class App {
   private domApp: Element;
@@ -31,6 +30,7 @@ class App {
     const height = domApp.clientHeight;
 
     this.camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 100);
+    this.camera.position.y = 10;
     this.camera.position.z = 10;
 
     new OrbitControls(this.camera, this.domApp as HTMLElement);
@@ -38,34 +38,66 @@ class App {
 
   private setupLight() {
     const color = 0xffffff;
-    const intensity = 1;
+    const intensity = 3;
     const light = new THREE.DirectionalLight(color, intensity);
     light.position.set(-1, 2, 4);
     this.scene.add(light);
   }
 
+  private makeRandomColorMaterial() {
+    const colors = [
+      "#fcba03",
+      "#ff852e",
+      "#a664e8",
+      "#6471e8",
+      "#4de3a0",
+      "#94e65a",
+      "#f573c3",
+    ];
+    const randomNum = Math.floor(Math.random() * colors.length);
+    return new THREE.MeshPhongMaterial({ color: colors[randomNum] });
+  }
+
   private setupModels() {
-    const material = new THREE.MeshStandardMaterial();
+    const axesHelper = new THREE.AxesHelper(10);
+    this.scene.add(axesHelper);
 
-    const geomParent = new THREE.BoxGeometry(2, 2, 2);
-    const parent = new THREE.Mesh(geomParent, material);
+    const material = new THREE.MeshPhongMaterial();
 
-    const geomChild = new THREE.BoxGeometry(1, 1, 1);
-    const child = new THREE.Mesh(geomChild, material);
+    const ground = new THREE.PlaneGeometry(15, 15);
+    const groundMesh = new THREE.Mesh(ground, this.makeRandomColorMaterial());
+    groundMesh.rotation.x = THREE.MathUtils.degToRad(-90);
+    this.scene.add(groundMesh);
 
-    child.position.x = 3;
-    child.rotation.y = THREE.MathUtils.degToRad(45);
+    const bigSphere = new THREE.SphereGeometry(3);
+    const bigSphereMesh = new THREE.Mesh(
+      bigSphere,
+      this.makeRandomColorMaterial()
+    );
+    this.scene.add(bigSphereMesh);
 
-    parent.position.y = 2;
-    parent.rotation.y = THREE.MathUtils.degToRad(45);
-    // parent.scale.set(2, 2, 2);
+    for (let i = 0; i < 8; i++) {
+      const torusPivot = new THREE.Object3D();
+      const torus = new THREE.TorusGeometry(0.8, 0.3);
+      const torusMesh = new THREE.Mesh(torus, this.makeRandomColorMaterial());
+      torusPivot.add(torusMesh);
+      torusMesh.position.x = 6;
+      torusPivot.position.y = 1.5;
+      torusPivot.rotation.y = THREE.MathUtils.degToRad(-45 * i);
+      bigSphereMesh.add(torusPivot);
+    }
 
-    parent.add(child);
-
-    this.scene.add(parent);
-
-    const axesOfScene = new THREE.AxesHelper(10);
-    this.scene.add(axesOfScene);
+    const smallSpherePivot = new THREE.Object3D();
+    smallSpherePivot.name = "smallSpherePivot";
+    const smallSphere = new THREE.SphereGeometry(0.5);
+    const smallSphereMesh = new THREE.Mesh(
+      smallSphere,
+      this.makeRandomColorMaterial()
+    );
+    smallSphereMesh.position.x = 6;
+    smallSphereMesh.position.y = 1.5;
+    smallSpherePivot.add(smallSphereMesh);
+    bigSphereMesh.add(smallSpherePivot);
   }
 
   private setupEvents() {
@@ -90,6 +122,14 @@ class App {
 
   private update(time: number) {
     time *= 0.001; // ms -> s
+
+    const smallSpherePivot = this.scene.getObjectByName("smallSpherePivot");
+    if (smallSpherePivot) {
+      smallSpherePivot.rotation.y = time;
+      // Euler를 이용한 rotation
+      // const euler = new THREE.Euler(0, time, 0);
+      // smallSpherePivot.quaternion.setFromEuler(euler);
+    }
   }
 
   private render(time: number) {
