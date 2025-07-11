@@ -45,25 +45,36 @@ class App {
   }
 
   private setupModels() {
-    const geometry = new THREE.SphereGeometry();
-    geometry.deleteAttribute("uv");
+    const vertices = [-1, 1, 0, 1, 1, 0, -1, -1, 0, 1, -1, 0];
 
-    const circle = new THREE.TextureLoader().load("./circle.png");
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute(
+      "position",
+      // vertices 배열을 3개씩 나눠 좌표로 취급함
+      new THREE.Float32BufferAttribute(vertices, 3)
+    );
 
-    const material = new THREE.PointsMaterial({
-      color: 0xff9900,
-      size: 10,
-      // sizeAttenuation -> 카메라의 거리에 따라 포인트 크기가 다르게 보이게 하는 속성
-      sizeAttenuation: true,
-      map: circle,
-      // 텍스처에 표현된 픽셀의 알파값이 0.5보다 클 때만 표시되게 함
-      alphaTest: 0.9,
+    // LineBasicMaterial
+    // const material = new THREE.LineBasicMaterial({ color: 0xffff00 });
+    // LineDashedMaterial
+    const material = new THREE.LineDashedMaterial({
+      color: 0xffff00,
+      dashSize: 0.2,
+      gapSize: 0.1,
+      scale: 1,
     });
-    const points = new THREE.Points(geometry, material);
-    this.scene.add(points);
+
+    // Line -> 주어진 좌표를 모두 잇는 선을 그림
+    // LineLoop -> 주어진 좌표의 첫 점과 끝점까지 잇는 선을 그림
+    // LineSegments -> 주어진 좌표를 2개씩 나눠 잇는 선을 그림
+    const line = new THREE.LineSegments(geometry, material);
+    line.computeLineDistances();
+    this.scene.add(line);
 
     const gui = new GUI();
-    gui.add(material, "size", 0.01, 10, 0.01);
+    gui.add(material, "dashSize");
+    gui.add(material, "gapSize");
+    gui.add(material, "scale");
   }
 
   private setupEvents() {
