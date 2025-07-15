@@ -1,4 +1,8 @@
-import { OrbitControls, RGBELoader } from "three/examples/jsm/Addons.js";
+import {
+  OrbitControls,
+  RGBELoader,
+  VertexNormalsHelper,
+} from "three/examples/jsm/Addons.js";
 import "./style.css";
 import * as THREE from "three";
 
@@ -30,7 +34,7 @@ class App {
     const height = domApp.clientHeight;
 
     this.camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 100);
-    this.camera.position.z = 8;
+    this.camera.position.z = 4;
 
     new OrbitControls(this.camera, domApp as HTMLElement);
   }
@@ -54,52 +58,55 @@ class App {
 
   private setupModels() {
     const textureLoader = new THREE.TextureLoader();
-    const texture = textureLoader.load("./uv_grid_opengl.jpg");
-    texture.colorSpace = THREE.SRGBColorSpace;
+    const map = textureLoader.load("./Glass_Window_002_basecolor.jpg");
+    map.colorSpace = THREE.SRGBColorSpace;
 
-    // texture를 반복할 수 있게 함
-    texture.repeat.x = 1;
-    texture.repeat.y = 1;
-    // texture.wrapS = THREE.RepeatWrapping;
-    // texture.wrapS = THREE.RepeatWrapping;
-    texture.wrapT = THREE.ClampToEdgeWrapping;
-    texture.wrapT = THREE.ClampToEdgeWrapping;
-
-    // texture가 시작되는 위치를 변경
-    texture.offset.x = 0;
-    texture.offset.y = 0;
-
-    // texture를 회전
-    // texture.rotation = THREE.MathUtils.degToRad(45);
-
-    // texture의 중심점을 변경
-    // texture.center.x = 0.5;
-    // texture.center.y = 0.5;
-
-    // texture가 원래 크기보다 크게 표현될 때 사용
-    // THREE.NearestFilter를 사용하면 확대 했을 때도 색상이 뭉게지지 않음, 가장 가까운 픽셀의 색상을 가져와서 표현함
-    texture.magFilter = THREE.LinearFilter;
-    // texture가 원래 크기보다 작게 표현될 때 사용
-    // threejs에서 자동으로 텍스쳐에 대한 mipmap을 만들어줌
-    // texture.minFilter = THREE.NearestMipmapLinearFilter;
-    // texture.minFilter = THREE.NearestFilter;
-    // texture.minFilter = THREE.LinearFilter;
-    // texture.minFilter = THREE.NearestMipmapNearestFilter;
-    texture.minFilter = THREE.LinearMipmapNearestFilter;
+    const mapAO = textureLoader.load("./Glass_Window_002_ambientOcclusion.jpg");
+    const mapHeight = textureLoader.load("./Glass_Window_002_height.png");
+    const mapNormal = textureLoader.load("./Glass_Window_002_normal.jpg");
+    const mapRoughness = textureLoader.load("./Glass_Window_002_roughness.jpg");
+    const mapMetalic = textureLoader.load("./Glass_Window_002_metallic.jpg");
+    const mapAlpha = textureLoader.load("./Glass_Window_002_opacity.jpg");
 
     const material = new THREE.MeshStandardMaterial({
-      map: texture,
+      map,
+      normalMap: mapNormal,
+      normalScale: new THREE.Vector2(1, 1),
+      // geometry의 좌표를 법선벡터 방향으로 변형시켜 입체감을 표현, 픽셀값이 밝을수록 더 많이 움직임
+      displacementMap: mapHeight,
+      displacementScale: 0.2,
+      displacementBias: -0.15,
+      // 그림자
+      aoMap: mapAO,
+      aoMapIntensity: 1.5,
+      // 픽셀의 밝고 어두움에 따라 거칠기를 표현, 픽셀이 밝을수록 더 거칠음
+      roughnessMap: mapRoughness,
+      roughness: 0.8,
+      // 금속성을 표현, 픽셀이 밝을수록 더 금속같아짐
+      metalnessMap: mapMetalic,
+      metalness: 0.9,
+      // 투명도를 표현, 픽셀값이 밝을수록 불투명
+      alphaMap: mapAlpha,
+      transparent: true,
+      side: THREE.DoubleSide,
     });
 
-    const geomBox = new THREE.BoxGeometry(1, 1, 1);
+    const geomBox = new THREE.BoxGeometry(1, 1, 1, 256, 256, 256);
     const box = new THREE.Mesh(geomBox, material);
     box.position.x = -1;
     this.scene.add(box);
 
-    const geomSphere = new THREE.SphereGeometry(0.6);
+    const geomSphere = new THREE.SphereGeometry(0.6, 512, 256);
     const sphere = new THREE.Mesh(geomSphere, material);
     sphere.position.x = 1;
     this.scene.add(sphere);
+
+    // normalvector를 표시하는 helper
+    // const boxHelper = new VertexNormalsHelper(box, 0.1, 0xffff00);
+    // this.scene.add(boxHelper);
+
+    // const sphereHelper = new VertexNormalsHelper(sphere, 0.1, 0xffff00);
+    // this.scene.add(sphereHelper);
   }
 
   private setupEvents() {
