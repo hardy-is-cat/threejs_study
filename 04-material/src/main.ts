@@ -1,7 +1,6 @@
 import { OrbitControls, RGBELoader } from "three/examples/jsm/Addons.js";
 import "./style.css";
 import * as THREE from "three";
-import GUI from "three/examples/jsm/libs/lil-gui.module.min.js";
 
 class App {
   private domApp: Element;
@@ -31,40 +30,76 @@ class App {
     const height = domApp.clientHeight;
 
     this.camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 100);
-    this.camera.position.z = 4;
+    this.camera.position.z = 8;
 
     new OrbitControls(this.camera, domApp as HTMLElement);
   }
 
   private setupLight() {
+    // HDRI 광원, MeshStandardMaterial과 사용 가능
+    const rgbeLoader = new RGBELoader();
+    rgbeLoader.load("./charolettenbrunn_park_4k.hdr", (environmentMap) => {
+      environmentMap.mapping = THREE.EquirectangularRefractionMapping;
+      this.scene.background = environmentMap;
+      this.scene.environment = environmentMap;
+    });
+
     // 디렉셔널 라이트
-    const color = 0xffffff;
-    const intensity = 1;
-    const light = new THREE.DirectionalLight(color, intensity);
-    light.position.set(1, 2, 1);
-    this.scene.add(light);
+    // const color = 0xffffff;
+    // const intensity = 1;
+    // const light = new THREE.DirectionalLight(color, intensity);
+    // light.position.set(1, 2, 1);
+    // this.scene.add(light);
   }
 
   private setupModels() {
     const textureLoader = new THREE.TextureLoader();
-    const toonTexture = textureLoader.load("./toon.jpg");
-    toonTexture.minFilter = THREE.NearestFilter;
-    toonTexture.magFilter = THREE.NearestFilter;
+    const texture = textureLoader.load("./uv_grid_opengl.jpg");
+    texture.colorSpace = THREE.SRGBColorSpace;
 
-    const material = new THREE.MeshToonMaterial({
-      // MeshToonMaterial: 카툰랜더링, 젤다의 전설 랜더링이랑 비슷
-      gradientMap: toonTexture,
+    // texture를 반복할 수 있게 함
+    texture.repeat.x = 1;
+    texture.repeat.y = 1;
+    // texture.wrapS = THREE.RepeatWrapping;
+    // texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.ClampToEdgeWrapping;
+    texture.wrapT = THREE.ClampToEdgeWrapping;
+
+    // texture가 시작되는 위치를 변경
+    texture.offset.x = 0;
+    texture.offset.y = 0;
+
+    // texture를 회전
+    // texture.rotation = THREE.MathUtils.degToRad(45);
+
+    // texture의 중심점을 변경
+    // texture.center.x = 0.5;
+    // texture.center.y = 0.5;
+
+    // texture가 원래 크기보다 크게 표현될 때 사용
+    // THREE.NearestFilter를 사용하면 확대 했을 때도 색상이 뭉게지지 않음, 가장 가까운 픽셀의 색상을 가져와서 표현함
+    texture.magFilter = THREE.LinearFilter;
+    // texture가 원래 크기보다 작게 표현될 때 사용
+    // threejs에서 자동으로 텍스쳐에 대한 mipmap을 만들어줌
+    // texture.minFilter = THREE.NearestMipmapLinearFilter;
+    // texture.minFilter = THREE.NearestFilter;
+    // texture.minFilter = THREE.LinearFilter;
+    // texture.minFilter = THREE.NearestMipmapNearestFilter;
+    texture.minFilter = THREE.LinearMipmapNearestFilter;
+
+    const material = new THREE.MeshStandardMaterial({
+      map: texture,
     });
 
-    const geomCylinder = new THREE.CylinderGeometry(0.6, 0.9, 1.2, 64, 1);
-    const cylinder = new THREE.Mesh(geomCylinder, material);
-    cylinder.position.x = -1;
-    this.scene.add(cylinder);
+    const geomBox = new THREE.BoxGeometry(1, 1, 1);
+    const box = new THREE.Mesh(geomBox, material);
+    box.position.x = -1;
+    this.scene.add(box);
 
-    const geoTorusknot = new THREE.TorusKnotGeometry(0.4, 0.18, 128, 64);
-    const torusknot = new THREE.Mesh(geoTorusknot, material);
-    torusknot.position.x = 1;
-    this.scene.add(torusknot);
+    const geomSphere = new THREE.SphereGeometry(0.6);
+    const sphere = new THREE.Mesh(geomSphere, material);
+    sphere.position.x = 1;
+    this.scene.add(sphere);
   }
 
   private setupEvents() {
